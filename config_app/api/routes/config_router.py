@@ -1,21 +1,14 @@
-# HOW TO RUN FAST API: uvicorn main:app --reload
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from hands_on_challenge import load_config
+from fastapi import APIRouter, HTTPException
+from services.config_manager import ConfigManager
+from models.config_models import ConfigRequest, ConfigResponse, AgentResponse
+from utils.config_helper import load_config
 
-class ConfigRequest(BaseModel):
-    required_keys: list[str]
+router = APIRouter()
 
-class ConfigResponse(BaseModel):
-    config: dict[str, str]
+dev_keys = ["OPENAI_API_KEY_DEV", "AZURE_API_KEY_DEV", "DOTNET_API_KEY_DEV"]
+config_manager = ConfigManager(dev_keys)
 
-class AgentResponse(BaseModel):
-    message: str
-    loaded_count: int
-
-app = FastAPI()
-
-@app.post('/config/load')
+@router.post('/config/load')
 async def load_config_async(config_request: ConfigRequest) -> ConfigResponse:
     try:
         config = load_config(config_request.required_keys)
@@ -23,7 +16,7 @@ async def load_config_async(config_request: ConfigRequest) -> ConfigResponse:
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post('/agent/run')
+@router.post('/agent/run')
 async def openai_calling_agent(config_request: ConfigRequest) -> AgentResponse:
     """
     Load environment variables for an AI agent.
@@ -32,11 +25,14 @@ async def openai_calling_agent(config_request: ConfigRequest) -> AgentResponse:
         - 400 if any required key is missing or empty
     """
     try:
-        load_config(config_request.required_keys)
+        for key in config_request.required_keys:
+            _ = config_manager[key]
+            
+
         loaded_count = len(config_request.required_keys)
         return AgentResponse(
             message=f"Loaded {loaded_count} environment variables successfully",
             loaded_count=loaded_count
         )
-    except ValueError as e:
+    except (ValueError, KeyError) as e:
         raise HTTPException(status_code=400, detail=str(e))

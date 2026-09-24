@@ -1,9 +1,5 @@
 import threading
-from guided_coding_exercise import load_api_key
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
+from utils.config_helper import load_api_key
 
 class ConfigManager:
      """
@@ -39,15 +35,3 @@ class ConfigManager:
          """Return list of loaded config keys."""
          with self._lock:
              return list(self._config.keys())
-
-
-
-prod_keys = ["OPENAI_API_KEY_PROD", "AZURE_API_KEY_PROD", "DOTNET_API_KEY_PROD"]
-
-dev_keys = ['OPENAI_API_KEY_DEV', 'AZURE_API_KEY_DEV', 'DOTNET_API_KEY_DEV']
-        
-manager = ConfigManager(prod_keys)
-
-print(manager.get("DOTNET_API_KEY_PROD"))
-
-# print(manager.get('AZURE_API_KEY'))
